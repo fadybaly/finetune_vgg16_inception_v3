@@ -2,13 +2,13 @@
 """
 Created on Sat Apr 21 12:27:15 2018
 
-@author: fady-
+@author: Fady Baly
 """
 
 import cv2
-from preprocess import getImageNames
+from preprocess import get_images_names
 im = []
-imagesNames, labels = getImageNames(number_of_images = None, orig_data='../test/')
+imagesNames, labels = get_images_names(number_of_images=None, orig_data='../test/')
 
 for name in imagesNames:
     with open(name, 'rb') as f:
