@@ -18,13 +18,13 @@ from sklearn.model_selection import train_test_split
 
 
 def main(arguments):
-    max_num_epochs = arguments.me
-    batch_size = arguments.batchsize
-    hold_prob = arguments.holdprobabilty
-    numberofimages = arguments.numberOfimages
-    cd = arguments.choosedevice
-    dataset_folder = arguments.foldername
-    model = arguments.model
+    max_num_epochs = 1  # arguments.me
+    batch_size = 4  # arguments.batchsize
+    hold_prob = 0.5  # arguments.holdprobabilty
+    numberofimages = None  # arguments.numberOfimages
+    cd = 0  # arguments.choosedevice
+    dataset_folder = '/home/fady/Desktop/test/'  # arguments.foldername
+    model = 'vgg16'  # arguments.model
 
     device_name = ['/CPU:0', '/GPU:0']
     if device_name[cd] == '/CPU:0':        
@@ -85,6 +85,10 @@ def main(arguments):
         #                                num_classes=num_classes)
         toc = time.clock()
         print('loading model time: ', toc-tic)
+
+        writer = tf.summary.FileWriter('tensorboard-model')
+        writer.add_graph(sess.graph)
+        print('save tensorboard model')
 
         # train, dev, and test
         kickoff_training(x_train=x_train, y_train=y_train, session=sess, last_fc=vgg16_model.fc3l,

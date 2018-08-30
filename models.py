@@ -262,6 +262,7 @@ class Vgg16:
 class InceptionV3:
     def __init__(self, imgs, checkpoint_path, sess, dropout_keep_prob, num_classes):
         self.end_points = {}
+        self.variables_to_restore = []
         self.imgs = imgs
         self.inception_v3_base(imgs,
                                min_depth=16,
@@ -688,7 +689,7 @@ class InceptionV3:
 
     def load_weights(self, checkpoint_path, sess):
         exclusions =['InceptionV3/Logits', 'InceptionV3/AuxLogits']
-        variables_to_restore = []
+
         flag = 0
         for var in slim.get_model_variables():
             for exclusion in exclusions:
@@ -700,9 +701,9 @@ class InceptionV3:
             elif flag == 1:
                 break
             else:
-                variables_to_restore.append(var)
+                self.variables_to_restore.append(var)
 
-        init_fn = slim.assign_from_checkpoint_fn(checkpoint_path, variables_to_restore,
+        init_fn = slim.assign_from_checkpoint_fn(checkpoint_path, self.variables_to_restore,
                                                  ignore_missing_vars=False)
         init_fn(sess)
 

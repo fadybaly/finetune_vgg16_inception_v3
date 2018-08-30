@@ -5,7 +5,10 @@ Created on Mon Apr  9 13:27:53 2018
 @author: Fady Baly
 """
 
+import os
+import cv2
 import csv
+import shutil
 import matplotlib
 import numpy as np
 import tensorflow as tf
@@ -23,7 +26,7 @@ class Tee(object):
 
 
 def f1_score(confusion_matrix):
-    """ computes f1, macro_f1 scores for a confusion matrix
+    """computes f1, macro_f1 scores for a confusion matrix
         Args:
             confusion_matrix: the confusion matrix
 
@@ -229,3 +232,40 @@ def save_model(session, folder, batch_size, hold_prob):
     saver = tf.train.Saver()
     saver.save(session, folder + 'model/fine_tune_vgg16_b{:d}_hb{:.2f}'.format(
                         batch_size, hold_prob))
+
+
+def save_incorrect_predictions(paths, y_true, y_predicted, folder, session):
+    """saves the incorrect predictions of the best trained model yet, during training.
+
+    Args:
+        paths: a list of containing all images paths
+        y_true: a vector with the true labels
+        y_predicted: a vector with teh predicted labels
+        folder: the name of the folder in which we desire to save the wrongly predicted images
+
+    Returns:
+        saves the images in the desired directory
+    """
+
+    y_predicted = np.vstack(y_predicted)
+    # convert from one hot encoded labels to vectorized labels
+    y_predicted = session.run(tf.argmax(y_predicted, axis=1))
+    y_true = session.run(tf.argmax(y_true, axis=1))
+
+    matched_predictions = np.array(np.array(y_true) == np.array(y_predicted))
+    wrongly_classified_indices = [i for i, e in enumerate(matched_predictions) if not e]
+    wrongly_classified_pics = [paths[i] for i in wrongly_classified_indices]
+
+    # deletes the already existed directory and create a new one
+    # to save the wrong predictions of the new best model
+    if os.path.exists(folder):
+        shutil.rmtree(folder)
+        os.makedirs(folder)
+    else:
+        os.makedirs(folder)
+
+    # read the images and saves them to the new path
+    for path in wrongly_classified_pics:
+        img = cv2.imread(path)
+        cv2.imwrite(os.path.join(folder, os.path.split(path)[1]), img)
+        cv2.waitKey(0)

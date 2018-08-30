@@ -11,7 +11,8 @@ import numpy as np
 from tqdm import tqdm
 import tensorflow as tf
 from preprocess import preprocess_batch, preprocess_validate
-from train_utils import plot, get_scores, Tee, next_batch, write_scores, write_best_model, save_model, shuffle
+from train_utils import plot, get_scores, Tee, next_batch,\
+    write_scores, write_best_model, save_model, shuffle, save_incorrect_predictions
 
 tqdm.monitor_interval = 0
 warnings.filterwarnings("ignore")
@@ -157,6 +158,12 @@ def kickoff_training(x_train, y_train, session, last_fc, input_layer, labels_ten
                 best_model_name = folder + 'best model b{:d} hb{:.2f} epoch{:d}'.format(batch_size,
                                                                                         hold_prob, best_epoch)
                 write_best_model(test_f1_all_classes, dev_f1_all_classes, best_model_name)
+
+                # save incorrect dev and test predictions for the best model
+                save_incorrect_predictions(x_dev, y_dev, dev_predictions,
+                                           folder + 'wrongly_classified_dev/', session)
+                save_incorrect_predictions(x_test, y_test, test_predictions,
+                                           folder + 'wrongly_classified_test/', session)
 
                 # save best dev model
                 print('saving best model so far...')
