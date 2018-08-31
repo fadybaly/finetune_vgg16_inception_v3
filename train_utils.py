@@ -37,13 +37,6 @@ def f1_score(confusion_matrix):
     tp = np.diag(confusion_matrix)
     fp = np.sum(confusion_matrix, axis=0) - tp
     fn = np.sum(confusion_matrix, axis=1) - tp
-    # we're not using TN
-    # TN = []
-    # for i in range(num_classes):
-    #     temp = np.delete(confusion_matrix, i, 0)  # delete ith row
-    #     temp = np.delete(temp, i, 1)  # delete ith column
-    #     TN.append(sum(sum(temp)))
-    #  TN = np.array(TN)
 
     # get precision and recall
     precision = tp / (tp + fp)

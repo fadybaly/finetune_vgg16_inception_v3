@@ -11,7 +11,7 @@ import numpy as np
 from tqdm import tqdm
 import tensorflow as tf
 from preprocess import preprocess_batch, preprocess_validate
-from train_utils import plot, get_scores, Tee, next_batch,\
+from train_utils_gitignore import plot, get_scores, Tee, next_batch,\
     write_scores, write_best_model, save_model, shuffle, save_incorrect_predictions
 
 tqdm.monitor_interval = 0

@@ -116,7 +116,6 @@ def main(arguments):
 
 
 if __name__ == "__main__":
-    # get_available_processors()
     parser = argparse.ArgumentParser()
     parser.add_argument('-me', help='maximum number of epochs', type=int, default=100)
     parser.add_argument('-b', '--batchsize', help="provide list of desired batch sizes", type=int, default=64)

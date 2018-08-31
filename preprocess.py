@@ -69,12 +69,6 @@ def preprocess_validate(images_names, color_data, tensors, softmax_layer,
     # load, remove mean, crop images      
     dataset = []
     for image_name in images_names:
-        # with open(image_name, 'rb') as f:
-        #     check_chars = f.read()[-2:]
-        # if check_chars != b'\xff\xd9':
-        #     continue
-        # else:
-        #     im = cv2.imread(image_name)
         im = cv2.imread(image_name)
         im[0] = im[0] - color_data['r_mean']
         im[1] = im[1] - color_data['g_mean']
