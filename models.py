@@ -21,6 +21,7 @@ class Vgg16:
         self.convlayers()
         self.fc_layers(hold_prob, num_classes)
         # self.softmax = tf.nn.softmax(self.fc3l)
+        self.last_layer = self.fc3l
         sess.run(tf.global_variables_initializer())
 
         if weights is not None and sess is not None:
@@ -281,7 +282,7 @@ class InceptionV3:
                           create_aux_logits=True,
                           scope='InceptionV3',
                           global_pool=False)
-
+        self.last_layer = self.end_points['Logits']
         self.load_weights(checkpoint_path, sess)
 
     def inception_v3_base(self, inputs,

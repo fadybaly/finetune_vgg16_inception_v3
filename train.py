@@ -19,38 +19,22 @@ warnings.filterwarnings("ignore")
 np.seterr(divide='ignore', invalid='ignore')
 
 
-def kickoff_training(x_train, y_train, session, last_fc, input_layer, labels_tensor, x_test, y_test,
-                     x_dev, y_dev, folder, b_mean, g_mean, r_mean, batch_size=32, learn_rate=0.01,
-                     num_epochs=1, num_classes=None, hold_prob=0.5, model=''):
+def start_training(x_data, y_data, flags, color_data, session, tensors, last_fc):
     """Trains the model with the given parameters
     Args:
-        x_train: training data
-        y_train: training labels
-        session: the current session we're working in
-        last_fc: the last layer we have in the model graph
-        input_layer: the input placeholder
-        labels_tensor: the output of the model
-        x_test: testing data
-        y_test: testing labels
-        x_dev: dev data
-        y_dev: dev labels
-        folder: the name of the folder in which we use to store our results and trained models
-        b_mean: dataset blue color mean
-        r_mean: dataset red color mean
-        g_mean: dataset green color mean
-        batch_size: batch size for training and testing
-        learn_rate: self explanatory
-        num_epochs: number of times we pass through the whole dataset
-        num_classes: the number of classes
-        hold_prob: the dropout probability we use during training, we shut it off during testing
-        model: define model as inception_v3 or vgg16
+        x_data: train, dev, test data
+        y_data: train, dev, test labels
+        flags: training parameters
+        color_data: RGB color means
+        tensors: input and label tensors
+        last_fc: logits layer
+        session: the current working session
 
     Returns:
         saves model performances for train dev test, figures for f1 and accuracy scores, saves the best model
     """
 
-    global batch_data
-    log_name = folder + 'training log b{:d} hb{:.2f}'.format(batch_size, hold_prob)
+    log_name = flags['folder'] + 'training log b{:d} hb{:.2f}'.format(flags['batch_size'], flags['hold_prob'])
     # start logging training print functions
     log = open(log_name + '.log', 'w')
     backup = sys.stdout
@@ -69,10 +53,11 @@ def kickoff_training(x_train, y_train, session, last_fc, input_layer, labels_ten
     softmax_layer = tf.nn.softmax(last_fc, name='softmax')
 
     # design optimizer
-    cost_function = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=last_fc, labels=labels_tensor))
-    optimizer = tf.train.AdamOptimizer(learning_rate=learn_rate).minimize(cost_function)
+    cost_function = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=last_fc,
+                                                                           labels=tensors['labels_tensor']))
+    optimizer = tf.train.AdamOptimizer(learning_rate=flags['learn_rate']).minimize(cost_function)
 
-    num_steps = len(x_train) // batch_size + 1
+    num_steps = len(x_data['x_train']) // flags['batch_size'] + 1
 
     # initialize and run global variables
     init = tf.global_variables_initializer()
@@ -81,16 +66,17 @@ def kickoff_training(x_train, y_train, session, last_fc, input_layer, labels_ten
     # start training
     print('Let the training begin:')
     stop_counter = 0
-    for epoch in range(num_epochs):
-        x_train_shuffle, y_train_shuffle = shuffle(x_train, y_train)
+    for epoch in range(flags['num_epochs']):
+        x_train_shuffle, y_train_shuffle = shuffle(x_data['x_train'], y_data['y_train'])
         print('Epoch #{:d}'.format(epoch + 1))
         for step, k in zip(range(num_steps), tqdm(range(num_steps - 1))):
             # extract batches for training
-            data, batch_labels = next_batch(step, batch_size, x_train_shuffle, y_train_shuffle)
+            data, batch_labels = next_batch(step, flags['batch_size'], x_train_shuffle, y_train_shuffle)
             # preprocess each batch with global RGB mean extracted earlier
-            batch_data = preprocess_batch(data, b_mean, g_mean, r_mean, model)
+            batch_data = preprocess_batch(data, color_data['b_mean'], color_data['g_mean'], color_data['r_mean'],
+                                          flags['model'])
             # train the batch
-            feed_dict = {input_layer: batch_data, labels_tensor: batch_labels}
+            feed_dict = {tensors['input_layer']: batch_data, tensors['labels_tensor']: batch_labels}
             _, cost = session.run([optimizer, cost_function], feed_dict=feed_dict)
         # deleting batch_data to reduce memory usage
         del batch_data
@@ -102,42 +88,42 @@ def kickoff_training(x_train, y_train, session, last_fc, input_layer, labels_ten
         # get train scores
         # create batches for predictions to avoid out of memory error
         train_predictions = []
-        for step in range(len(x_train) // batch_size + 1):
-            data, labels = next_batch(step, batch_size, x_train, y_train)
+        for step in range(len(x_data['x_train']) // flags['batch_size'] + 1):
+            data, labels = next_batch(step, flags['batch_size'], x_data['x_train'], y_data['y_train'])
             # get prediction per batch
-            train_predictions.append(preprocess_validate(data, b_mean, g_mean, r_mean, input_layer,
-                                                         labels_tensor, softmax_layer, session, labels, model))
+            train_predictions.append(preprocess_validate(data, color_data, tensors, softmax_layer, session,
+                                                         labels, flags['model']))
 
-        train_f1, train_f1_all_classes, train_accuracy = get_scores(session, y_train,
-                                                                    train_predictions, num_classes)
+        train_f1, train_f1_all_classes, train_accuracy = get_scores(session, y_data['y_train'],
+                                                                    train_predictions, flags['num_classes'])
 
         # get dev scores
         # create batches for predictions to avoid out of memory error
         dev_predictions = []
-        for step in range(len(x_dev) // batch_size + 1):
-            data, labels = next_batch(step, batch_size, x_dev, y_dev)
-            dev_predictions.append(preprocess_validate(data, b_mean, g_mean, r_mean, input_layer,
-                                                       labels_tensor, softmax_layer, session, labels, model))
+        for step in range(len(x_data['x_dev']) // flags['batch_size'] + 1):
+            data, labels = next_batch(step, flags['batch_size'], x_data['x_dev'], y_data['y_dev'])
+            dev_predictions.append(preprocess_validate(data, color_data, tensors, softmax_layer, session,
+                                                       labels, flags['model']))
 
-        dev_f1, dev_f1_all_classes, dev_accuracy = get_scores(session, y_dev,
-                                                              dev_predictions, num_classes)
+        dev_f1, dev_f1_all_classes, dev_accuracy = get_scores(session, y_data['y_dev'],
+                                                              dev_predictions, flags['num_classes'])
 
         # get test score
         # create batches for predictions to avoid out of memory errors
         test_predictions = []
-        for step in range(len(x_test) // batch_size + 1):
-            data, labels = next_batch(step, batch_size, x_test, y_test)
-            test_predictions.append(preprocess_validate(data, b_mean, g_mean, r_mean, input_layer,
-                                                        labels_tensor, softmax_layer, session, labels, model))
+        for step in range(len(x_data['x_test']) // flags['batch_size'] + 1):
+            data, labels = next_batch(step, flags['batch_size'], x_data['x_test'], y_data['y_test'])
+            test_predictions.append(preprocess_validate(data, color_data, tensors, softmax_layer, session,
+                                                        labels, flags['model']))
 
-        test_f1, test_f1_all_classes, test_accuracy = get_scores(session, y_test,
-                                                                 test_predictions, num_classes)
+        test_f1, test_f1_all_classes, test_accuracy = get_scores(session, y_data['y_test'],
+                                                                 test_predictions, flags['num_classes'])
 
         # print progress for each epoch
         progress = ('Epoch {:2d}/{:2d}:\n'
                     '\tTrain F1 Score = {:.2f}%\t  Dev F1 Score = {:.2f}%\t Test F1 Score = {:.2f}%\n'
                     '\tTrain Accuracy = {:.2f}%\t  Dev Accuracy = {:.2f}%\t Test Accuracy = {:.2f}%\n')
-        print(progress.format(epoch + 1, num_epochs, train_f1, dev_f1, test_f1, train_accuracy,
+        print(progress.format(epoch + 1, flags['num_epochs'], train_f1, dev_f1, test_f1, train_accuracy,
                               dev_accuracy, test_accuracy))
 
         total_f1_train.append(train_f1)
@@ -146,10 +132,6 @@ def kickoff_training(x_train, y_train, session, last_fc, input_layer, labels_ten
         total_dev_accuracy.append(dev_accuracy)
         total_f1_test.append(test_f1)
         total_test_accuracy.append(test_accuracy)
-        save_incorrect_predictions(x_dev, y_dev, dev_predictions,
-                                   folder + 'wrongly_classified_dev/', session)
-        save_incorrect_predictions(x_test, y_test, test_predictions,
-                                   folder + 'wrongly_classified_test/', session)
 
         # check if best f1 exists and save model
         if len(total_f1_dev) > 2:
@@ -159,19 +141,20 @@ def kickoff_training(x_train, y_train, session, last_fc, input_layer, labels_ten
                 stop_counter = 0
 
                 # write dev f1 scores for the best model
-                best_model_name = folder + 'best model b{:d} hb{:.2f} epoch{:d}'.format(batch_size,
-                                                                                        hold_prob, best_epoch)
+                best_model_name = flags['folder'] + 'best model b{:d} hb{:.2f} epoch{:d}'.format(flags['batch_size'],
+                                                                                                 flags['hold_prob'],
+                                                                                                 best_epoch)
                 write_best_model(test_f1_all_classes, dev_f1_all_classes, best_model_name)
 
                 # save incorrect dev and test predictions for the best model
-                save_incorrect_predictions(x_dev, y_dev, dev_predictions,
-                                           folder + 'wrongly_classified_dev/', session)
-                save_incorrect_predictions(x_test, y_test, test_predictions,
-                                           folder + 'wrongly_classified_test/', session)
+                save_incorrect_predictions(x_data['x_dev'], y_data['y_dev'], dev_predictions,
+                                           flags['folder'] + 'misclassified_dev/', session)
+                save_incorrect_predictions(x_data['x_test'], y_data['y_test'], test_predictions,
+                                           flags['folder'] + 'misclassified_test/', session)
 
                 # save best dev model
                 print('saving best model so far...')
-                save_model(session, folder, batch_size, hold_prob)
+                save_model(session, flags)
             else:
                 # counter for stopping criteria; increases when no new best is found
                 stop_counter += 1
@@ -185,15 +168,11 @@ def kickoff_training(x_train, y_train, session, last_fc, input_layer, labels_ten
     log.close()
 
     # write total f1 for test dev train
-    write_scores(total_f1_test, total_f1_dev, total_f1_train, batch_size,
-                 folder, hold_prob, 'f1')
+    write_scores(total_f1_test, total_f1_dev, total_f1_train, flags, 'f1')
 
     # write total accuracy for test dev train
-    write_scores(total_test_accuracy, total_dev_accuracy, total_train_accuracy,
-                 batch_size, folder, hold_prob, 'acc')
+    write_scores(total_test_accuracy, total_dev_accuracy, total_train_accuracy, flags, 'acc')
 
     # plot overall performance
-    plot(total_f1_test, total_f1_dev, total_f1_train, batch_size,
-         hold_prob, score='F1', folder=folder)
-    plot(total_test_accuracy, total_dev_accuracy, total_train_accuracy,
-         batch_size, hold_prob, score='Accuracy', folder=folder)
+    plot(total_f1_test, total_f1_dev, total_f1_train, flags, 'F1')
+    plot(total_test_accuracy, total_dev_accuracy, total_train_accuracy, flags, score='Accuracy')

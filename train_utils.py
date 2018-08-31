@@ -136,15 +136,13 @@ def shuffle(x_train, y_train):
     return x_train_shuffle, y_train_shuffle
 
 
-def plot(total_test, total_dev, total_train, batch_size, hold_prob, score, folder):
+def plot(total_test, total_dev, total_train, flags, score):
     """save figures for f1, accuracy performances
         Args:
             total_test: total f1/accuracy score for every epoch for test data
             total_dev: total f1/accuracy score for every epoch for dev data
             total_train: total f1/accuracy score for every epoch for train data
-            folder: the directory where we want to save the model
-            batch_size: the batch size of the training to included it in the model's name
-            hold_prob: the dropout probability to include it in the model's name
+            flags: training parameters
             score: 'f1' or 'acc' to include it on the figure's name
 
         Returns:
@@ -161,23 +159,23 @@ def plot(total_test, total_dev, total_train, batch_size, hold_prob, score, folde
     plt.ylabel('%s score' % score)
     plt.xlabel('Epoch number')
     plt.grid(True)
-    plt.title('{:s} Score for batchsize {:d} dropout {:.2f}'.format(score, batch_size, hold_prob))
+    plt.title('{:s} Score for batchsize {:d} dropout {:.2f}'.format(score, flags['batch_size'], flags['hold_prob']))
     plt.legend(('test', 'dev', 'train'))
 
     # save fig
-    plt.savefig(folder + '{:s} Score for batchsize {:d} dropout {:.2f}.png'.format(score, batch_size, hold_prob))
+    plt.savefig(flags['folder'] + '{:s} Score for batchsize {:d} dropout {:.2f}.png'.format(score,
+                                                                                            flags['batch_size'],
+                                                                                            flags['hold_prob']))
     plt.close()
 
       
-def write_scores(total_test, total_dev, total_train, batch_size, folder, hold_prob, score):
+def write_scores(total_test, total_dev, total_train, flags, score):
     """write accuracies throughout the whole training procedure
         Args:
             total_test: total f1/accuracy score for every epoch for test data
             total_dev: total f1/accuracy score for every epoch for dev data
             total_train: total f1/accuracy score for every epoch for train data
-            folder: the directory where we want to save the model
-            batch_size: the batch size of the training to included it in the model's name
-            hold_prob: the dropout probability to include it in the model's name
+            flags: training parameters
             score: 'f1' or 'acc' to include it on the figure's name
 
         Returns:
@@ -185,14 +183,15 @@ def write_scores(total_test, total_dev, total_train, batch_size, folder, hold_pr
     """
     scores = zip(total_test[1:], total_dev[1:], total_train[1:])
     if score == 'f1':
-        with open(folder + 'macrof1_test_dev_train_b{:d}_hb{:.2f}.csv'.format(batch_size,
-                  hold_prob), 'w', newline='') as f:
+        with open(flags['folder'] + 'macrof1_test_dev_train_b{:d}_hb{:.2f}.csv'.format(flags['batch_size'],
+                  flags['hold_prob']), 'w', newline='') as f:
             writer = csv.writer(f)
             writer.writerow(('test_macroF1', 'dev_macroF1', 'train_macroF1'))
             for row in scores:
                 writer.writerow(row)
     elif score == 'acc':
-        with open(folder + 'accuracy_test_dev_train_b{:d}_hb{:.2f}.csv'.format(batch_size, hold_prob),
+        with open(flags['folder'] + 'accuracy_test_dev_train_b{:d}_hb{:.2f}.csv'.format(flags['batch_size'],
+                                                                                        flags['hold_prob']),
                   'w', newline='') as f:
             writer = csv.writer(f)
             writer.writerow(('test_accuracy', 'dev_accuracy', 'train_accuracy'))
@@ -218,20 +217,18 @@ def write_best_model(test_f1_all_classes, dev_f1_all_classes, best_model_name):
             writer.writerow(row)
 
 
-def save_model(session, folder, batch_size, hold_prob):
+def save_model(session, flags):
     """saves best model
         Args:
             session: the current session
-            folder: the directory where we want to save the model
-            batch_size: the batch size of the training to included it in the model's name
-            hold_prob: the dropout probability to include it in the model's name
+            flags: training parameters
 
         Returns:
             saved model
     """
     saver = tf.train.Saver()
-    saver.save(session, folder + 'model/fine_tune_vgg16_b{:d}_hb{:.2f}'.format(
-                        batch_size, hold_prob))
+    saver.save(session, flags['folder'] + 'model/fine_tune_vgg16_b{:d}_hb{:.2f}'.format(
+                        flags['batch_size'], flags['hold_prob']))
 
 
 def save_incorrect_predictions(paths, y_true, y_predicted, folder, session):
@@ -242,6 +239,7 @@ def save_incorrect_predictions(paths, y_true, y_predicted, folder, session):
         y_true: a vector with the true labels
         y_predicted: a vector with teh predicted labels
         folder: the name of the folder in which we desire to save the wrongly predicted images
+        session:
 
     Returns:
         saves the images in the desired directory
