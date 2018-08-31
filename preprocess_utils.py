@@ -73,6 +73,7 @@ def clr_mean(images_names):
     Returns:
         color mean per color
     """
+    # check if image is not corrupted
     for image_name in images_names:
         with open(image_name, 'rb') as f:
             check_chars = f.read()[-2:]

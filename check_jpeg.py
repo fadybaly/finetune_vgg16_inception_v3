@@ -7,6 +7,7 @@ Created on Sat Apr 21 12:27:15 2018
 
 import cv2
 from preprocess import get_images_names
+
 im = []
 imagesNames, labels = get_images_names(number_of_images=None, orig_data='../test/')
 
