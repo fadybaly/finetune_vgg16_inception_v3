@@ -146,6 +146,10 @@ def kickoff_training(x_train, y_train, session, last_fc, input_layer, labels_ten
         total_dev_accuracy.append(dev_accuracy)
         total_f1_test.append(test_f1)
         total_test_accuracy.append(test_accuracy)
+        save_incorrect_predictions(x_dev, y_dev, dev_predictions,
+                                   folder + 'wrongly_classified_dev/', session)
+        save_incorrect_predictions(x_test, y_test, test_predictions,
+                                   folder + 'wrongly_classified_test/', session)
 
         # check if best f1 exists and save model
         if len(total_f1_dev) > 2:

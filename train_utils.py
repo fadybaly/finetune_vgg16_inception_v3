@@ -267,5 +267,9 @@ def save_incorrect_predictions(paths, y_true, y_predicted, folder, session):
     # read the images and saves them to the new path
     for path in wrongly_classified_pics:
         img = cv2.imread(path)
-        cv2.imwrite(os.path.join(folder, os.path.split(path)[1]), img)
+        class_directory = os.path.join(folder, os.path.split(os.path.split(path)[0])[1])
+        if not os.path.exists(class_directory):
+            os.makedirs(class_directory)
+            print('class directory created')
+        cv2.imwrite(os.path.join(class_directory, os.path.split(path)[1]), img)
         cv2.waitKey(0)
