@@ -29,12 +29,6 @@ def preprocess_batch(images_names, b_mean, g_mean, r_mean, model):
     # load, remove mean, crop images
     dataset = []
     for image_name in images_names:
-        # with open(image_name, 'rb') as f:
-        #     check_chars = f.read()[-2:]
-        # if check_chars != b'\xff\xd9':
-        #     continue
-        # else:
-        #     im = cv2.imread(image_name)
         im = cv2.imread(image_name)
         im[0] = im[0] - r_mean
         im[1] = im[1] - g_mean
