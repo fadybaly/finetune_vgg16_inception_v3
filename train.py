@@ -11,7 +11,7 @@ import numpy as np
 from tqdm import tqdm
 import tensorflow as tf
 from preprocess import preprocess_batch, preprocess_validate
-from train_utils_gitignore import plot, get_scores, Tee, next_batch,\
+from train_utils import plot, get_scores, Tee, next_batch,\
     write_scores, write_best_model, save_model, shuffle, save_incorrect_predictions
 
 tqdm.monitor_interval = 0
@@ -76,10 +76,11 @@ def start_training(x_data, y_data, flags, color_data, session, tensors, last_fc)
             batch_data = preprocess_batch(data, color_data['b_mean'], color_data['g_mean'], color_data['r_mean'],
                                           flags['model'])
             # train the batch
-            feed_dict = {tensors['input_layer']: batch_data, tensors['labels_tensor']: batch_labels}
+            feed_dict = {tensors['input_layer']: batch_data, tensors['labels_tensor']: batch_labels,
+                         tensors['hold_prob']: flags['hold_prob']}
             _, cost = session.run([optimizer, cost_function], feed_dict=feed_dict)
-        # deleting batch_data to reduce memory usage
-        del batch_data
+            # deleting batch_data to reduce memory usage
+            del batch_data
 
         '''
         evaluate model
@@ -90,9 +91,11 @@ def start_training(x_data, y_data, flags, color_data, session, tensors, last_fc)
         train_predictions = []
         for step in range(len(x_data['x_train']) // flags['batch_size'] + 1):
             data, labels = next_batch(step, flags['batch_size'], x_data['x_train'], y_data['y_train'])
+
             # get prediction per batch
-            train_predictions.append(preprocess_validate(data, color_data, tensors, softmax_layer, session,
-                                                         labels, flags['model']))
+            if data is not None:
+                train_predictions.append(preprocess_validate(data, color_data, tensors, softmax_layer, session,
+                                                             labels, flags['model']))
 
         train_f1, train_f1_all_classes, train_accuracy = get_scores(session, y_data['y_train'],
                                                                     train_predictions, flags['num_classes'])
@@ -102,8 +105,9 @@ def start_training(x_data, y_data, flags, color_data, session, tensors, last_fc)
         dev_predictions = []
         for step in range(len(x_data['x_dev']) // flags['batch_size'] + 1):
             data, labels = next_batch(step, flags['batch_size'], x_data['x_dev'], y_data['y_dev'])
-            dev_predictions.append(preprocess_validate(data, color_data, tensors, softmax_layer, session,
-                                                       labels, flags['model']))
+            if data is not None:
+                dev_predictions.append(preprocess_validate(data, color_data, tensors, softmax_layer, session,
+                                                           labels, flags['model']))
 
         dev_f1, dev_f1_all_classes, dev_accuracy = get_scores(session, y_data['y_dev'],
                                                               dev_predictions, flags['num_classes'])
@@ -113,8 +117,9 @@ def start_training(x_data, y_data, flags, color_data, session, tensors, last_fc)
         test_predictions = []
         for step in range(len(x_data['x_test']) // flags['batch_size'] + 1):
             data, labels = next_batch(step, flags['batch_size'], x_data['x_test'], y_data['y_test'])
-            test_predictions.append(preprocess_validate(data, color_data, tensors, softmax_layer, session,
-                                                        labels, flags['model']))
+            if data is not None:
+                test_predictions.append(preprocess_validate(data, color_data, tensors, softmax_layer, session,
+                                                            labels, flags['model']))
 
         test_f1, test_f1_all_classes, test_accuracy = get_scores(session, y_data['y_test'],
                                                                  test_predictions, flags['num_classes'])

@@ -1,3 +1,5 @@
 .idea/*
 ignore scripts/*
 model_weights/*
+test/*
+venv/*

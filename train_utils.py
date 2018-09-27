@@ -13,7 +13,7 @@ import matplotlib
 import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
-matplotlib.use('Agg')
+# matplotlib.use('Agg')
 
 
 class Tee(object):
@@ -104,11 +104,13 @@ def next_batch(step, batch_size, x_data, y_label):
     if offset+batch_size <= len(x_data):
         data = x_data[offset:offset + batch_size]
         labels = y_label[offset:offset + batch_size]
+        return data, labels
+    elif offset+batch_size > len(x_data) and offset != len(x_data):
+        data = x_data[offset:]
+        labels = y_label[offset:]
+        return data, labels
     else:
-        if len(x_data[offset:]) != 0:
-            data = x_data[offset:]
-            labels = y_label[offset:]
-    return data, labels
+        return None, None
 
 
 def shuffle(x_train, y_train):
@@ -220,8 +222,7 @@ def save_model(session, flags):
             saved model
     """
     saver = tf.train.Saver()
-    saver.save(session, flags['folder'] + 'model/fine_tune_vgg16_b{:d}_hb{:.2f}'.format(
-                        flags['batch_size'], flags['hold_prob']))
+    saver.save(session, flags['folder'] + 'model/model.ckpt')
 
 
 def save_incorrect_predictions(paths, y_true, y_predicted, folder, session):

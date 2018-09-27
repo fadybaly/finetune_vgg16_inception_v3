@@ -74,10 +74,11 @@ def preprocess_validate(images_names, color_data, tensors, softmax_layer,
     dataset = np.array(dataset)
     # normalize images
     dataset = norm_data(dataset)
+
     # predict labels for provided images names
     predictions = session.run(softmax_layer, feed_dict={tensors['input_layer']: dataset,
-                                                        tensors['labels_tensor']: y_true})
-
+                                                        tensors['labels_tensor']: y_true,
+                                                        tensors['hold_prob']: 1})
     return predictions
 
 

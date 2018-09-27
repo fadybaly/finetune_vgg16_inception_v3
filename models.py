@@ -15,11 +15,11 @@ trunc_normal = lambda stddev: tf.truncated_normal_initializer(0.0, stddev)
 
 
 class Vgg16:
-    def __init__(self, imgs, weights, sess, hold_prob, num_classes):
+    def __init__(self, imgs, chatbot_tensor, weights, sess, hold_prob, num_classes):
         # with tf.device(device_name):
         self.imgs = imgs
         self.convlayers()
-        self.fc_layers(hold_prob, num_classes)
+        self.fc_layers(hold_prob, num_classes, chatbot_tensor)
         # self.softmax = tf.nn.softmax(self.fc3l)
         self.last_layer = self.fc3l
         sess.run(tf.global_variables_initializer())
@@ -31,8 +31,8 @@ class Vgg16:
         self.parameters = []
 
         # zero-mean input
-        with tf.name_scope('preprocess') as scope:
-            mean = tf.constant([0, 0, 0], dtype=tf.float32, shape=[1, 1, 1, 3], name='img_mean')
+        with tf.name_scope('img_mean') as scope:
+            mean = tf.constant([0, 0, 0], dtype=tf.float32, shape=[1, 1, 1, 3], name=scope)
             images = self.imgs - mean
 
         # conv1_1
@@ -213,7 +213,7 @@ class Vgg16:
                                         padding='SAME',
                                         name='pool4')
 
-    def fc_layers(self, hold_prob, num_classes):
+    def fc_layers(self, hold_prob, num_classes, chatbot_tensor=[]):
 
         # fc1
         with tf.name_scope('fc1') as scope:
@@ -239,7 +239,7 @@ class Vgg16:
 
         # Dropout
         with tf.name_scope('dropout') as scope:
-            self.dropout = tf.nn.dropout(self.fc2, keep_prob=hold_prob)
+            self.dropout = tf.nn.dropout(self.fc2, keep_prob=hold_prob, name=scope)
 
         # fc3
         with tf.name_scope('fc3') as scope:
@@ -247,7 +247,9 @@ class Vgg16:
                                                    stddev=1e-3), name='weights')
             fc3b = tf.Variable(tf.constant(1.0, shape=[num_classes], dtype=tf.float32),
                                trainable=True, name='biases')
-            self.fc3l = tf.nn.bias_add(tf.matmul(self.dropout, fc3w), fc3b)
+            self.fc3l = tf.nn.bias_add(tf.matmul(self.dropout, fc3w), fc3b, name=scope)
+            if chatbot_tensor:
+                self.fc3l = tf.concat([self.fc3l, chatbot_tensor], axis=1)
             self.parameters += [fc3w, fc3b]
 
     def load_weights(self, weight_file, sess):
@@ -707,4 +709,5 @@ class InceptionV3:
         init_fn = slim.assign_from_checkpoint_fn(checkpoint_path, self.variables_to_restore,
                                                  ignore_missing_vars=False)
         init_fn(sess)
+
 

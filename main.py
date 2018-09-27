@@ -33,6 +33,7 @@ def main(arguments):
     flags['learn_rate'] = 1e-4
     flags['vgg16_weights'] = 'model_weights/vgg16_weights.npz'
     flags['inception_v3_weights'] = 'model_weights/inception_v3.ckpt'
+    flags['chatbot_tensor'] = []
 
     device_name = ['/CPU:0', '/GPU:0']
     if device_name[flags['cd']] == '/CPU:0':
@@ -85,19 +86,22 @@ def main(arguments):
 
     # create input and label tensors placeholder
     with tf.device(device_name[flags['cd']]):
+        tensors['hold_prob'] = tf.placeholder_with_default(1, shape=(), name='hold_prob')
         if flags['model'] == 'vgg16':
             tensors['input_layer'] = tf.placeholder(tf.float32, [None, 224, 224, 3], 'input_layer')
         else:
             tensors['input_layer'] = tf.placeholder(tf.float32, [None, 299, 299, 3], 'input_layer')
         tensors['labels_tensor'] = tf.placeholder(tf.float32, [None, flags['num_classes']])
+        if flags['chatbot_tensor']:
+            tensors['chatbot_tensor'] = tf.placeholder(tf.float32, [None, 10], 'chatbot_tensor')
 
     # start tensorflow session
     with tf.Session(config=config) as sess:
         # create the vgg16 model
         tic = time.clock()
         if flags['model'] == 'vgg16':
-            model = Vgg16(tensors['input_layer'], flags['vgg16_weights'], sess,
-                          hold_prob=flags['hold_prob'],
+            model = Vgg16(tensors['input_layer'], tensors['chatbot_tensor'], flags['vgg16_weights'], sess,
+                          hold_prob=tensors['hold_prob'],
                           num_classes=flags['num_classes'])
         else:
             model = InceptionV3(tensors['input_layer'], flags['inception_v3_weights'], sess,
@@ -106,9 +110,9 @@ def main(arguments):
         toc = time.clock()
         print('loading model time: ', toc-tic)
 
-        writer = tf.summary.FileWriter('tensorboard-model')
+        writer = tf.summary.FileWriter('tensorboard')
         writer.add_graph(sess.graph)
-        print('save tensorboard model')
+        print('start tensorboard')
 
         # train, dev, and test
         start_training(x_data=x_data, y_data=y_data, flags=flags, color_data=color_data, session=sess,
@@ -129,5 +133,4 @@ if __name__ == "__main__":
     parser.add_argument('-m', '--model', help='choose "inception_v3" or "vgg16"', type=str,
                         default='vgg16')
     args = parser.parse_args()
-
     main(args)
