@@ -179,5 +179,5 @@ def start_training(x_data, y_data, flags, color_data, session, tensors, last_fc)
     write_scores(total_test_accuracy, total_dev_accuracy, total_train_accuracy, flags, 'acc')
 
     # plot overall performance
-    plot(total_f1_test, total_f1_dev, total_f1_train, flags, 'F1')
-    plot(total_test_accuracy, total_dev_accuracy, total_train_accuracy, flags, score='Accuracy')
+    # plot(total_f1_test, total_f1_dev, total_f1_train, flags, 'F1')
+    # plot(total_test_accuracy, total_dev_accuracy, total_train_accuracy, flags, score='Accuracy')

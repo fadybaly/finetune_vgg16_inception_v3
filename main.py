@@ -86,7 +86,7 @@ def main(arguments):
 
     # create input and label tensors placeholder
     with tf.device(device_name[flags['cd']]):
-        tensors['hold_prob'] = tf.placeholder_with_default(1, shape=(), name='hold_prob')
+        tensors['hold_prob'] = tf.placeholder_with_default(1.0, shape=(), name='hold_prob')
         if flags['model'] == 'vgg16':
             tensors['input_layer'] = tf.placeholder(tf.float32, [None, 224, 224, 3], 'input_layer')
         else:
@@ -94,8 +94,10 @@ def main(arguments):
         tensors['labels_tensor'] = tf.placeholder(tf.float32, [None, flags['num_classes']])
         if flags['chatbot_tensor']:
             tensors['chatbot_tensor'] = tf.placeholder(tf.float32, [None, 10], 'chatbot_tensor')
+        else:
+            tensors['chatbot_tensor'] = []
 
-    # start tensorflow session
+            # start tensorflow session
     with tf.Session(config=config) as sess:
         # create the vgg16 model
         tic = time.clock()

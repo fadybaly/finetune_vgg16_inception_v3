@@ -3,3 +3,6 @@ ignore scripts/*
 model_weights/*
 test/*
 venv/*
+2 classes results batchsize 2 holdprob 0.50/*
+__pycache__/*
+tensorboard/*
